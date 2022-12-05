@@ -38,7 +38,7 @@ export class Player {
         if (bottonScreen) {
             this.velocity.y += this.gravity
         } else {
-            this.velocity.y = 0
+            //this.velocity.y = 0
         } 
         
     }

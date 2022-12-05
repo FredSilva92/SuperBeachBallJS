@@ -95,9 +95,16 @@
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _player_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./player.js */ "./src/js/player.js");
-/* harmony import */ var _platform_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./platform.js */ "./src/js/platform.js");
-/* harmony import */ var _resources_tile1_png__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../resources/tile1.png */ "./src/resources/tile1.png");
+/* harmony import */ var _entities_player_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./entities/player.js */ "./src/js/entities/player.js");
+/* harmony import */ var _entities_platform_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./entities/platform.js */ "./src/js/entities/platform.js");
+/* harmony import */ var _entities_gameElement_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./entities/gameElement.js */ "./src/js/entities/gameElement.js");
+/* harmony import */ var _resources_tile1_png__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../resources/tile1.png */ "./src/resources/tile1.png");
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./utils.js */ "./src/js/utils.js");
+/* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_utils_js__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _resources_background_png__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../resources/background.png */ "./src/resources/background.png");
+
+
+
 
 
 
@@ -105,7 +112,9 @@ var canvas = document.querySelector('canvas');
 var context = canvas.getContext('2d');
 canvas.width = innerWidth;
 canvas.height = innerHeight;
-var gravity = 1.5;
+var tile = Object(_utils_js__WEBPACK_IMPORTED_MODULE_4__["createImage"])(_resources_tile1_png__WEBPACK_IMPORTED_MODULE_3__["default"]);
+var background = Object(_utils_js__WEBPACK_IMPORTED_MODULE_4__["createImage"])(_resources_background_png__WEBPACK_IMPORTED_MODULE_5__["default"]);
+var player, platforms, gameElements;
 var key = {
   right: {
     pressed: false
@@ -114,12 +123,54 @@ var key = {
     pressed: false
   }
 };
-var player = new _player_js__WEBPACK_IMPORTED_MODULE_0__["Player"](canvas, 200, 100);
-var platforms = [new _platform_js__WEBPACK_IMPORTED_MODULE_1__["Platform"](context, 100, 400), new _platform_js__WEBPACK_IMPORTED_MODULE_1__["Platform"](context, 350, 250)];
+var getLevel = new Promise(function (resolve, reject) {
+  fetch("http://localhost:8080/level", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json"
+    }
+  }).then(function (data) {
+    return resolve(data);
+  })["catch"](function (error) {
+    return reject(error);
+  });
+});
+getLevel.then(function (response) {
+  response.json().then(function (data) {
+    console.log(data);
+  });
+});
+var myPromise = new Promise(function (resolve, reject) {
+  setTimeout(function () {
+    resolve("foo");
+  }, 300);
+});
+
+var mySolve = function mySolve(a) {
+  console.log(a);
+  init();
+  animate();
+};
+
+var myReject = function myReject() {
+  console.log("not foo");
+};
+
+myPromise.then(mySolve, myReject);
+
+function init() {
+  var tileBottom = innerHeight - tile.height;
+  platforms = [new _entities_platform_js__WEBPACK_IMPORTED_MODULE_1__["Platform"](context, 0, tileBottom, tile), new _entities_platform_js__WEBPACK_IMPORTED_MODULE_1__["Platform"](context, 60, tileBottom, tile), new _entities_platform_js__WEBPACK_IMPORTED_MODULE_1__["Platform"](context, 120, tileBottom, tile), new _entities_platform_js__WEBPACK_IMPORTED_MODULE_1__["Platform"](context, 180, tileBottom, tile), new _entities_platform_js__WEBPACK_IMPORTED_MODULE_1__["Platform"](context, 240, tileBottom, tile), new _entities_platform_js__WEBPACK_IMPORTED_MODULE_1__["Platform"](context, 300, tileBottom, tile), new _entities_platform_js__WEBPACK_IMPORTED_MODULE_1__["Platform"](context, 360, tileBottom, tile), new _entities_platform_js__WEBPACK_IMPORTED_MODULE_1__["Platform"](context, 420, tileBottom, tile), new _entities_platform_js__WEBPACK_IMPORTED_MODULE_1__["Platform"](context, 480, tileBottom, tile), new _entities_platform_js__WEBPACK_IMPORTED_MODULE_1__["Platform"](context, 540, tileBottom, tile)];
+  player = new _entities_player_js__WEBPACK_IMPORTED_MODULE_0__["Player"](canvas, 200, 100);
+  gameElements = [new _entities_gameElement_js__WEBPACK_IMPORTED_MODULE_2__["GameElement"](context, 0, 0, background)];
+}
 
 function animate() {
   requestAnimationFrame(animate);
   context.clearRect(0, 0, canvas.width, canvas.height);
+  gameElements.forEach(function (gameElem) {
+    gameElem.draw();
+  });
   player.update();
   platforms.forEach(function (platform) {
     platform.draw();
@@ -127,10 +178,8 @@ function animate() {
 
   if (key.left.pressed && player.position.x > 100) {
     player.velocity.x += -1;
-    console.log('Aqui 1');
   } else if (key.right.pressed && player.position.x < 400) {
     player.velocity.x += 1;
-    console.log('Aqui 2');
   } else {
     player.velocity.x = 0;
 
@@ -138,12 +187,10 @@ function animate() {
       platforms.forEach(function (platform) {
         platform.position.x += 4;
       });
-      console.log('Aqui 3');
     } else if (key.right.pressed) {
       platforms.forEach(function (platform) {
         platform.position.x -= 4;
       });
-      console.log('Aqui 4');
     }
   }
 
@@ -151,10 +198,16 @@ function animate() {
     if (player.position.y + player.height <= platform.position.y && player.position.y + player.height + player.velocity.y >= platform.position.y && player.position.x + player.width >= platform.position.x && player.position.x <= platform.position.x + platform.width) {
       player.velocity.y = 0;
     }
-  });
-}
+  }); // lose condition
 
-animate();
+  if (player.position.y > canvas.height) {
+    console.log('you lose');
+    init();
+  }
+} //init()
+//animate()
+
+
 addEventListener('keydown', function (_ref) {
   var keyCode = _ref.keyCode;
   console.log(keyCode);
@@ -192,22 +245,62 @@ addEventListener('keyup', function (_ref2) {
 
     case LEFT:
       key.left.pressed = false;
-      console.log('Left up');
       break;
 
     case RIGHT:
       key.right.pressed = false;
-      console.log('Right up');
       break;
   }
 });
 
 /***/ }),
 
-/***/ "./src/js/platform.js":
-/*!****************************!*\
-  !*** ./src/js/platform.js ***!
-  \****************************/
+/***/ "./src/js/entities/gameElement.js":
+/*!****************************************!*\
+  !*** ./src/js/entities/gameElement.js ***!
+  \****************************************/
+/*! exports provided: GameElement */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "GameElement", function() { return GameElement; });
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var GameElement = /*#__PURE__*/function () {
+  function GameElement(context, x, y, image) {
+    _classCallCheck(this, GameElement);
+
+    this.context = context;
+    this.image = image;
+    this.position = {
+      x: x,
+      y: y
+    };
+    this.width = image.width;
+    this.height = image.height;
+  }
+
+  _createClass(GameElement, [{
+    key: "draw",
+    value: function draw() {
+      this.context.drawImage(this.image, this.position.x, this.position.y);
+    }
+  }]);
+
+  return GameElement;
+}();
+
+/***/ }),
+
+/***/ "./src/js/entities/platform.js":
+/*!*************************************!*\
+  !*** ./src/js/entities/platform.js ***!
+  \*************************************/
 /*! exports provided: Platform */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -221,23 +314,28 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
 var Platform = /*#__PURE__*/function () {
-  function Platform(context, x, y) {
+  function Platform(context, x, y, image) {
     _classCallCheck(this, Platform);
 
     this.context = context;
+    this.image = image;
     this.position = {
       x: x,
       y: y
     };
-    this.width = 200;
-    this.height = 20;
+    this.width = image.width;
+    this.height = image.height;
   }
 
   _createClass(Platform, [{
     key: "draw",
     value: function draw() {
-      this.context.fillStyle = 'blue';
-      this.context.fillRect(this.position.x, this.position.y, this.width, this.height);
+      this.context.drawImage(this.image, this.position.x, this.position.y);
+      /*this.context.fillStyle = 'blue'
+      this.context.fillRect(this.position.x,
+          this.position.y,
+          this.width,
+          this.height)*/
     }
   }]);
 
@@ -246,10 +344,10 @@ var Platform = /*#__PURE__*/function () {
 
 /***/ }),
 
-/***/ "./src/js/player.js":
-/*!**************************!*\
-  !*** ./src/js/player.js ***!
-  \**************************/
+/***/ "./src/js/entities/player.js":
+/*!***********************************!*\
+  !*** ./src/js/entities/player.js ***!
+  \***********************************/
 /*! exports provided: Player */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -297,14 +395,45 @@ var Player = /*#__PURE__*/function () {
 
       if (bottonScreen) {
         this.velocity.y += this.gravity;
-      } else {
-        this.velocity.y = 0;
+      } else {//this.velocity.y = 0
       }
     }
   }]);
 
   return Player;
 }();
+
+/***/ }),
+
+/***/ "./src/js/utils.js":
+/*!*************************!*\
+  !*** ./src/js/utils.js ***!
+  \*************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+function createImage(src) {
+  var image = new Image();
+  image.src = src;
+  return image;
+}
+
+module.exports = {
+  createImage: createImage
+};
+
+/***/ }),
+
+/***/ "./src/resources/background.png":
+/*!**************************************!*\
+  !*** ./src/resources/background.png ***!
+  \**************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "a5bd4e0ae13bc2edca22d79535b9af8b.png");
 
 /***/ }),
 
