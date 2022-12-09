@@ -1,9 +1,14 @@
+import beachBallImg from "../../resources/BeachBall.png"
+import { createImage } from "../utils"
+
 export class Player {
 
     constructor(canvas) {
         this.gravity = 1.5
         this.canvas = canvas
         this.context = canvas.getContext('2d')
+
+        this.image = createImage(beachBallImg)
 
         this.position = {
             x: 100,
@@ -15,16 +20,21 @@ export class Player {
             y: 2
         }
 
-        this.width = 30
-        this.height = 30
+        this.width = 50
+        this.height = 50
     }
 
     draw() {
+        this.context.drawImage(this.image, 
+            this.position.x, 
+            this.position.y,
+            this.width,
+            this.height)/*
         this.context.fillStyle = 'red'
         this.context.fillRect(this.position.x,
             this.position.y,
             this.width,
-            this.height)
+            this.height)*/
     }
 
     update() {

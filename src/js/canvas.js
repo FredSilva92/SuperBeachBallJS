@@ -1,12 +1,26 @@
 import {Player} from "./entities/player.js"
 import { Platform } from "./entities/platform.js"
 import { GameElement } from "./entities/gameElement.js"
-import tile1 from "../resources/tile1.png"
-import { createImage } from "./utils.js"
+
+import { createImage} from "./utils.js"
+
 import backgroundLvl1 from "../resources/background.png"
+import tile1 from "../resources/tile1.png"
+import spike from "../resources/spike.png"
+import "particles.js";
+import particles from "./particles.json"
+import Timer from "./timer.js"
+
 
 const canvas = document.querySelector('canvas')
 const context = canvas.getContext('2d')
+
+const PLAT_REF = 'p',
+    SPIKE_REF= 's',
+    COIN_REF = 'c',
+    FINISH_REF = 'f';
+
+let currentLevel = 1;
 
 canvas.width = innerWidth
 canvas.height = innerHeight
@@ -29,108 +43,101 @@ const key = {
     }
 }
 
-const getLevel = new Promise((resolve, reject) => {
-    fetch("http://localhost:8080/level", {
-       method: "GET",
-       headers: {
-        "Content-Type": "application/json"
-        },
-    }).then(data => resolve(data))
-       .catch(error => reject(error));
- });
 
-getLevel.then(response => {
-    response.json().then(data => {
-       console.log(data);
-    })
- });
- 
- 
-
-const myPromise = new Promise((resolve, reject) => {
-    setTimeout(() => {
-      resolve("foo");
-    }, 300);
-  });
-
-const mySolve = function(a) {
-    console.log(a)
-    init()
-    animate()
+async function init() {
+    await startLevel();
+    animate();
 }
 
-const myReject = function() {
-    console.log("not foo")
-}
 
-myPromise.then(mySolve, myReject)
+async function startLevel() {
 
 
-function init() {
 
-    const tileBottom = innerHeight - tile.height;
+    let levelMap, 
+        myPromise = new Promise((resolve, reject) => {
+
+            fetch("http://localhost:8080/level" + currentLevel, {
+                method: "GET",
+                headers: {
+                "Content-Type": "application/json"
+                }
+            }).then(data => resolve(data))
+                .catch(error => reject(error));
+        });
     
-    platforms = [new Platform(context, 0, tileBottom, tile), 
-        new Platform(context, 60, tileBottom, tile),
-        new Platform(context, 120, tileBottom, tile),
-        new Platform(context, 180, tileBottom, tile),
-        new Platform(context, 240, tileBottom, tile),
-        new Platform(context, 300, tileBottom, tile),
-        new Platform(context, 360, tileBottom, tile),
-        new Platform(context, 420, tileBottom, tile),
-        new Platform(context, 480, tileBottom, tile),
-        new Platform(context, 540, tileBottom, tile)]
 
-    
+    await myPromise.then(response =>  response.json()).then(data => {
+        levelMap = data.level
+        platforms = buildLevel(levelMap);
+    }).catch(error => console.log(error))
+
     player = new Player(canvas, 200, 100)
 
-    gameElements = [new GameElement(context, 0, 0, background)]
+    //gameElements = [new GameElement(context, 0, 0, background)]
+    gameElements = []
 
+    
+    //particlesJS('particles-js', particles);
 }
 
-function animate() {
+
+function sleep(miliseconds) {
+    var currentTime = new Date().getTime();
+ 
+    while (currentTime + miliseconds >= new Date().getTime()) {
+    }
+ }
+
+async function animate() {
     requestAnimationFrame(animate);
     context.clearRect(0, 0, canvas.width, canvas.height);
     
 
-    gameElements.forEach(gameElem => {
+    /*gameElements.forEach(gameElem => {
         gameElem.draw()
-    });
+    });*/
 
     player.update();
 
     platforms.forEach(platform => {
         platform.draw()
+
     });
-
-    
-
 
 
     if (key.left.pressed && player.position.x > 100) {
-        player.velocity.x += -1;
-    } else if (key.right.pressed && player.position.x < 400) {
-        player.velocity.x += 1;
+        player.velocity.x += -4;
+       // console.log('player velocity');
+        //console.log(player.velocity);
+    } else if (key.right.pressed && player.position.x < 100) {
+        player.velocity.x += 4;
+        //console.log('player velocity');
+        //console.log(player.velocity);
     } else {
         player.velocity.x = 0;
         
         if (key.left.pressed) {
             platforms.forEach(platform => {
-                platform.position.x += 4;
+                platform.position.x += 8;
             })
             
         } else if (key.right.pressed) {
             platforms.forEach(platform => {
-                platform.position.x -= 4;
+                platform.position.x -= 8;
             })
             
         }
     }
 
+    let isDead = false;
 
+    for(let i = 0; i < platforms.length; i++) {
+        
+        let platform = platforms[i];
 
-    platforms.forEach(platform => {
-        if (player.position.y + player.height
+        if (PLAT_REF == platform.ref &&
+            player.position.y + player.height
                 <= platform.position.y &&
             player.position.y + player.height + player.velocity.y
                 >= platform.position.y &&
@@ -141,19 +148,102 @@ function animate() {
             ) {
             player.velocity.y = 0;
         } 
-    })
+
+        if ( SPIKE_REF == platform.ref && 
+            player.position.x + player.width >= 
+                platform.position.x &&
+            player.position.x <=
+                platform.position.x + platform.width &&
+             player.position.y + player.height >= platform.position.y) {
+
+                player.velocity.y = 0;
+                player.position.x = platform.position.x;
+                player.position.y = platform.position.y;
+                player.draw()
+                console.log('estas morto');
+                //setInterval(7000)
+                sleep(500)
+                isDead = true
+                startLevel();
+        }
+    }
 
     // lose condition
-    if (player.position.y > canvas.height) {
+    if (player.position.y > canvas.height ) {
         console.log('you lose')
-        init()
+        //player.velocity.x = 0;
+        //ddawait delay(5000).then(init);
+        isDead = false
+        
+        const timer = new Timer(60);
+        timer.update = function update(deltaTime) {
+            //level.update(deltaTime);
+    
+            //camera.pos.x = Math.max(0, mario.pos.x - 100);
+
+            
+            
+        }
+    
+        //timer.start()
+        await setTimeout(5000);
+
+        startLevel()
+        
+        return;
     }
 }
 
-//init()
-//animate()
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
-addEventListener('keydown', ({keyCode}) => {
+function buildLevel(levelMap) {
+    const platforms = [];
+    const elemXSize = 60;
+    const elemYSize = 60;
+  
+    let revertedY = levelMap.length,
+      xAxis = 0;
+  
+    for (let i = 0; i <levelMap.length; i++) {
+      
+      var line = levelMap[i];
+  
+      for(let j = 0; j < line.length; j++) {
+
+        let x = xAxis,
+           y = innerHeight - elemYSize * revertedY;
+        
+        switch(line[j]) {
+        
+          case PLAT_REF:
+            platforms.push(new Platform(context, x, y, elemXSize, elemYSize, tile, PLAT_REF));
+            break;
+  
+          case SPIKE_REF:
+            
+            platforms.push(new Platform(context, x, y, elemXSize, elemYSize, createImage(spike), SPIKE_REF));
+            break;  
+
+          case COIN_REF:
+            //platforms.push(new Platform(context, x, y, elemXSize, elemYSize, tile, COIN_REF));
+            break;
+        }
+  
+        xAxis+=elemXSize;
+        
+      }
+  
+      revertedY--;
+      xAxis = 0;
+    }
+  
+    return platforms;
+  }
+
+
+  addEventListener('keydown', ({keyCode}) => {
     console.log(keyCode)
     const JUMP = 87,
         LEFT = 65,
@@ -174,8 +264,8 @@ addEventListener('keydown', ({keyCode}) => {
             break;
     }
 })
-
-addEventListener('keyup', ({keyCode}) => {
+    
+  addEventListener('keyup', ({keyCode}) => {
     console.log(keyCode)
     const JUMP = 87,
         LEFT = 65,
@@ -193,3 +283,7 @@ addEventListener('keyup', ({keyCode}) => {
             break;
     }
 })
+
+
+
+init()
