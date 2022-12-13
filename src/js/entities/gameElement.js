@@ -1,15 +1,17 @@
+import { createImage } from "../utils"
+
 export class GameElement {
-    constructor(context, x, y, image) {
+    constructor(context, x, y, imageName) {
         this.context = context
-        this.image = image
+        this.image = createImage(imageName)
 
         this.position = {
             x,
             y
         }
 
-        this.width = image.width
-        this.height = image.height
+        this.width = innerWidth
+        this.height = innerHeight
     }
 
     draw() {

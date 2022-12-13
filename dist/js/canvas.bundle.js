@@ -2146,14 +2146,32 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _entities_gameElement_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./entities/gameElement.js */ "./src/js/entities/gameElement.js");
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./utils.js */ "./src/js/utils.js");
 /* harmony import */ var _utils_js__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_utils_js__WEBPACK_IMPORTED_MODULE_5__);
-/* harmony import */ var _resources_background_png__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../resources/background.png */ "./src/resources/background.png");
-/* harmony import */ var _resources_tile1_png__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../resources/tile1.png */ "./src/resources/tile1.png");
-/* harmony import */ var _resources_spike_png__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../resources/spike.png */ "./src/resources/spike.png");
-/* harmony import */ var particles_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! particles.js */ "./node_modules/particles.js/particles.js");
-/* harmony import */ var particles_js__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(particles_js__WEBPACK_IMPORTED_MODULE_9__);
-/* harmony import */ var _particles_json__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./particles.json */ "./src/js/particles.json");
-var _particles_json__WEBPACK_IMPORTED_MODULE_10___namespace = /*#__PURE__*/__webpack_require__.t(/*! ./particles.json */ "./src/js/particles.json", 1);
-/* harmony import */ var _timer_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./timer.js */ "./src/js/timer.js");
+/* harmony import */ var _resources_backgroundLvl1_png__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../resources/backgroundLvl1.png */ "./src/resources/backgroundLvl1.png");
+/* harmony import */ var _resources_backgroundLvl2_png__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../resources/backgroundLvl2.png */ "./src/resources/backgroundLvl2.png");
+/* harmony import */ var _resources_backgroundLvl3_png__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../resources/backgroundLvl3.png */ "./src/resources/backgroundLvl3.png");
+/* harmony import */ var _resources_backgroundLvl4_png__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../resources/backgroundLvl4.png */ "./src/resources/backgroundLvl4.png");
+/* harmony import */ var _resources_congratulations_png__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../resources/congratulations.png */ "./src/resources/congratulations.png");
+/* harmony import */ var _resources_pause_png__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../resources/pause.png */ "./src/resources/pause.png");
+/* harmony import */ var _resources_youDied_png__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../resources/youDied.png */ "./src/resources/youDied.png");
+/* harmony import */ var _resources_loading_png__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ../resources/loading.png */ "./src/resources/loading.png");
+/* harmony import */ var _resources_platform_png__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../resources/platform.png */ "./src/resources/platform.png");
+/* harmony import */ var _resources_tile5_png__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../resources/tile5.png */ "./src/resources/tile5.png");
+/* harmony import */ var _resources_spike_png__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ../resources/spike.png */ "./src/resources/spike.png");
+/* harmony import */ var _resources_coin_png__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! ../resources/coin.png */ "./src/resources/coin.png");
+/* harmony import */ var particles_js__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! particles.js */ "./node_modules/particles.js/particles.js");
+/* harmony import */ var particles_js__WEBPACK_IMPORTED_MODULE_18___default = /*#__PURE__*/__webpack_require__.n(particles_js__WEBPACK_IMPORTED_MODULE_18__);
+/* harmony import */ var _particles_json__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ./particles.json */ "./src/js/particles.json");
+var _particles_json__WEBPACK_IMPORTED_MODULE_19___namespace = /*#__PURE__*/__webpack_require__.t(/*! ./particles.json */ "./src/js/particles.json", 1);
+/* harmony import */ var _entities_coinCounter_js__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ./entities/coinCounter.js */ "./src/js/entities/coinCounter.js");
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2172,17 +2190,27 @@ var PLAT_REF = 'p',
     SPIKE_REF = 's',
     COIN_REF = 'c',
     FINISH_REF = 'f';
-var currentLevel = 1;
 canvas.width = innerWidth;
 canvas.height = innerHeight;
-var tile = Object(_utils_js__WEBPACK_IMPORTED_MODULE_5__["createImage"])(_resources_tile1_png__WEBPACK_IMPORTED_MODULE_7__["default"]);
-var background = Object(_utils_js__WEBPACK_IMPORTED_MODULE_5__["createImage"])(_resources_background_png__WEBPACK_IMPORTED_MODULE_6__["default"]);
-var player, platforms, gameElements;
-var key = {
+var youDiedObj = new _entities_gameElement_js__WEBPACK_IMPORTED_MODULE_4__["GameElement"](context, innerWidth / 2 - innerWidth / 6, 0, _resources_youDied_png__WEBPACK_IMPORTED_MODULE_12__["default"]);
+var player,
+    collisionElements,
+    gameElements,
+    loadingElements,
+    coinCounter,
+    freezeMovement = false,
+    pauseGame = false,
+    isFinish = false,
+    raf,
+    currentLevel = 1;
+var keys = {
   right: {
     pressed: false
   },
   left: {
+    pressed: false
+  },
+  jump: {
     pressed: false
   }
 };
@@ -2240,18 +2268,48 @@ function _startLevel() {
             return myPromise.then(function (response) {
               return response.json();
             }).then(function (data) {
-              levelMap = data.level;
-              platforms = buildLevel(levelMap);
+              levelMap = data.map;
+              collisionElements = buildLevel(levelMap);
             })["catch"](function (error) {
               return console.log(error);
             });
 
           case 3:
-            player = new _entities_player_js__WEBPACK_IMPORTED_MODULE_2__["Player"](canvas, 200, 100); //gameElements = [new GameElement(context, 0, 0, background)]
+            if (player === undefined) {
+              player = new _entities_player_js__WEBPACK_IMPORTED_MODULE_2__["Player"](canvas, 200, 100);
+            } else {
+              player.reset();
+            }
 
-            gameElements = []; //particlesJS('particles-js', particles);
+            coinCounter = new _entities_coinCounter_js__WEBPACK_IMPORTED_MODULE_20__["CoinCounter"](context); //gameElements = [new GameElement(context, 0, 0, background)]
 
-          case 5:
+            gameElements = [];
+            loadingElements = [];
+            _context2.t0 = currentLevel;
+            _context2.next = _context2.t0 === 1 ? 10 : _context2.t0 === 2 ? 12 : _context2.t0 === 3 ? 14 : _context2.t0 === 4 ? 16 : _context2.t0 === 5 ? 18 : 20;
+            break;
+
+          case 10:
+            gameElements = [new _entities_gameElement_js__WEBPACK_IMPORTED_MODULE_4__["GameElement"](context, 0, 0, _resources_backgroundLvl1_png__WEBPACK_IMPORTED_MODULE_6__["default"])];
+            return _context2.abrupt("break", 20);
+
+          case 12:
+            gameElements = [new _entities_gameElement_js__WEBPACK_IMPORTED_MODULE_4__["GameElement"](context, 0, 0, _resources_backgroundLvl2_png__WEBPACK_IMPORTED_MODULE_7__["default"])];
+            return _context2.abrupt("break", 20);
+
+          case 14:
+            gameElements = [new _entities_gameElement_js__WEBPACK_IMPORTED_MODULE_4__["GameElement"](context, 0, -500, _resources_backgroundLvl3_png__WEBPACK_IMPORTED_MODULE_8__["default"])];
+            return _context2.abrupt("break", 20);
+
+          case 16:
+            gameElements = [new _entities_gameElement_js__WEBPACK_IMPORTED_MODULE_4__["GameElement"](context, 0, -250, _resources_backgroundLvl4_png__WEBPACK_IMPORTED_MODULE_9__["default"])];
+            return _context2.abrupt("break", 20);
+
+          case 18:
+            particlesJS('particles-js', _particles_json__WEBPACK_IMPORTED_MODULE_19__);
+            return _context2.abrupt("break", 20);
+
+          case 20:
           case "end":
             return _context2.stop();
         }
@@ -2261,152 +2319,181 @@ function _startLevel() {
   return _startLevel.apply(this, arguments);
 }
 
-function numberPrinter() {
-  return _numberPrinter.apply(this, arguments);
-}
-
-function _numberPrinter() {
-  _numberPrinter = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1___default.a.mark(function _callee3() {
-    var i;
-    return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1___default.a.wrap(function _callee3$(_context3) {
-      while (1) {
-        switch (_context3.prev = _context3.next) {
-          case 0:
-            i = 1;
-
-          case 1:
-            if (!(i <= 10)) {
-              _context3.next = 8;
-              break;
-            }
-
-            console.log(i);
-            _context3.next = 5;
-            return delay(1000);
-
-          case 5:
-            i++;
-            _context3.next = 1;
-            break;
-
-          case 8:
-          case "end":
-            return _context3.stop();
-        }
-      }
-    }, _callee3);
-  }));
-  return _numberPrinter.apply(this, arguments);
-}
-
-function sleep(miliseconds) {
-  var currentTime = new Date().getTime();
-
-  while (currentTime + miliseconds >= new Date().getTime()) {}
-}
-
 function animate() {
-  return _animate.apply(this, arguments);
-}
-
-function _animate() {
-  _animate = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_0___default()( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1___default.a.mark(function _callee4() {
-    var isDead, i, platform, timer;
-    return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_1___default.a.wrap(function _callee4$(_context4) {
-      while (1) {
-        switch (_context4.prev = _context4.next) {
-          case 0:
-            requestAnimationFrame(animate);
-            context.clearRect(0, 0, canvas.width, canvas.height);
-            /*gameElements.forEach(gameElem => {
-                gameElem.draw()
-            });*/
-
-            player.update();
-            platforms.forEach(function (platform) {
-              platform.draw();
-            });
-
-            if (key.left.pressed && player.position.x > 100) {
-              player.velocity.x += -4; // console.log('player velocity');
-              //console.log(player.velocity);
-            } else if (key.right.pressed && player.position.x < 100) {
-              player.velocity.x += 4; //console.log('player velocity');
-              //console.log(player.velocity);
-            } else {
-              player.velocity.x = 0;
-
-              if (key.left.pressed) {
-                platforms.forEach(function (platform) {
-                  platform.position.x += 8;
-                });
-              } else if (key.right.pressed) {
-                platforms.forEach(function (platform) {
-                  platform.position.x -= 8;
-                });
-              }
-            }
-
-            isDead = false;
-
-            for (i = 0; i < platforms.length; i++) {
-              platform = platforms[i];
-
-              if (PLAT_REF == platform.ref && player.position.y + player.height <= platform.position.y && player.position.y + player.height + player.velocity.y >= platform.position.y && player.position.x + player.width >= platform.position.x && player.position.x <= platform.position.x + platform.width) {
-                player.velocity.y = 0;
-              }
-
-              if (SPIKE_REF == platform.ref && player.position.x + player.width >= platform.position.x && player.position.x <= platform.position.x + platform.width && player.position.y + player.height >= platform.position.y) {
-                player.velocity.y = 0;
-                player.position.x = platform.position.x;
-                player.position.y = platform.position.y;
-                player.draw();
-                console.log('estas morto'); //setInterval(7000)
-
-                sleep(500);
-                isDead = true;
-                startLevel();
-              }
-            } // lose condition
-
-
-            if (!(player.position.y > canvas.height)) {
-              _context4.next = 16;
-              break;
-            }
-
-            console.log('you lose'); //player.velocity.x = 0;
-            //ddawait delay(5000).then(init);
-
-            isDead = false;
-            timer = new _timer_js__WEBPACK_IMPORTED_MODULE_11__["default"](60);
-
-            timer.update = function update(deltaTime) {} //level.update(deltaTime);
-            //camera.pos.x = Math.max(0, mario.pos.x - 100);
-            //timer.start()
-            ;
-
-            _context4.next = 14;
-            return setTimeout(5000);
-
-          case 14:
-            startLevel();
-            return _context4.abrupt("return");
-
-          case 16:
-          case "end":
-            return _context4.stop();
-        }
-      }
-    }, _callee4);
-  }));
-  return _animate.apply(this, arguments);
-}
-
-function delay(ms) {
-  return new Promise(function (resolve) {
-    return setTimeout(resolve, ms);
+  raf = requestAnimationFrame(animate);
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  gameElements.forEach(function (gameElem) {
+    gameElem.draw();
   });
+  collisionElements.forEach(function (collisionElem) {
+    collisionElem.draw();
+  });
+  coinCounter.update(player.coins);
+
+  if (pauseGame) {
+    player.draw();
+  } else {
+    player.update(keys, freezeMovement);
+  }
+
+  loadingElements.forEach(function (loadingElem) {
+    context.save();
+    context.globalAlpha = 0.3;
+    context.fillStyle = "blue";
+    context.fillRect(0, 0, innerWidth, innerHeight);
+    context.restore();
+    loadingElem.draw();
+  });
+
+  if (pauseGame) {
+    return;
+  }
+
+  if (isFinish) {
+    onFreezeMovement();
+    return;
+  }
+
+  if (freezeMovement) {
+    onFreezeMovement();
+    setTimeout(function () {
+      startLevel();
+      animate();
+      freezeMovement = false;
+    }, 1000);
+    return;
+  } else {
+    loadingElements = [];
+  }
+
+  if (keys.left.pressed && player.position.x > 100) {
+    player.velocity.x += -1;
+  } else if (keys.right.pressed && player.position.x < 100) {
+    player.velocity.x += 1;
+  } else {
+    player.velocity.x = 0;
+
+    if (keys.left.pressed) {
+      collisionElements.forEach(function (collisionElem) {
+        collisionElem.position.x += 4;
+      });
+    } else if (keys.right.pressed) {
+      collisionElements.forEach(function (collisionElem) {
+        collisionElem.position.x -= 4;
+      });
+    }
+  }
+
+  var hasCollided = collisionChecker();
+
+  if (keys.jump.pressed && hasCollided) {
+    console.log('Entrei aqui');
+    console.log(player.velocity.y === player.gravity);
+    player.velocity.y -= 30;
+  }
+
+  if (player.position.y > canvas.height) {
+    console.log('you lose');
+    loadingElements.push(youDiedObj);
+    player.specialPower = false;
+    freezeMovement = true;
+  }
+}
+
+function onFreezeMovement() {
+  keys.jump.pressed = false;
+  keys.left.pressed = false;
+  keys.right.pressed = false;
+  player.velocity.x = 0;
+  player.velocity.y = 0;
+  cancelAnimationFrame(raf);
+}
+
+function collisionChecker() {
+  var hasCollided = false;
+
+  for (var i = 0; i < collisionElements.length; i++) {
+    var collisionElem = collisionElements[i],
+        leftSide = player.position.x + player.width >= collisionElem.position.x,
+        rightSide = player.position.x <= collisionElem.position.x + collisionElem.width,
+        topSide = player.position.y + player.height + player.velocity.y >= collisionElem.position.y,
+        bottomSide = player.position.y <= collisionElem.position.y + collisionElem.height,
+        checkCollision = leftSide && rightSide && topSide && bottomSide;
+
+    if (PLAT_REF == collisionElem.ref && player.position.y + player.height <= collisionElem.position.y && player.position.y + player.height + player.velocity.y >= collisionElem.position.y && leftSide && rightSide) {
+      hasCollided = true;
+      player.velocity.y = 0;
+    }
+
+    if (SPIKE_REF === collisionElem.ref && checkCollision) {
+      if (player.specialPower) {
+        player.specialPower = false;
+        player.coins = 0;
+        var playerPosx = player.position.x + player.width,
+            playerPosY = player.position.y + player.height / 2,
+            a = collisionElem.position.x,
+            b = collisionElem.position.x + 5,
+            c = collisionElem.position.y + collisionElem.height / 2 - 5,
+            d = collisionElem.position.y + collisionElem.height / 2 + 5,
+            e = player.position.y + player.height,
+            f = collisionElem.position.y;
+
+        if (playerPosx >= a && playerPosx <= b && playerPosY >= c && playerPosY <= d) {
+          player.position.x -= player.width * 2;
+        } else if (player.position.x <= collisionElem.position.x + collisionElem.width && player.position.x >= collisionElem.position.x + collisionElem.width - 5 && playerPosY >= c && playerPosY <= d) {
+          player.position.x += player.width * 2;
+        } else if (e <= f) {
+          keys.jump.pressed = false;
+          player.velocity.y = 0;
+          player.velocity.y -= 40;
+        }
+      } else {
+        player.position.x = collisionElem.position.x;
+        player.position.y = collisionElem.position.y;
+        console.log('estas morto');
+        player.isWrecked = true;
+        freezeMovement = true;
+        loadingElements.push(new _entities_gameElement_js__WEBPACK_IMPORTED_MODULE_4__["GameElement"](context, innerWidth / 2 - innerWidth / 6, innerHeight / 2 - innerHeight / 8, _resources_youDied_png__WEBPACK_IMPORTED_MODULE_12__["default"]));
+        return;
+      }
+    }
+
+    if (FINISH_REF === collisionElem.ref && checkCollision) {
+      player.position.x = collisionElem.position.x;
+      player.position.y = collisionElem.position.y;
+      console.log('Nivel ' + currentLevel);
+      freezeMovement = true;
+
+      if (currentLevel == 5) {
+        isFinish = true;
+        loadingElements.push(new _entities_gameElement_js__WEBPACK_IMPORTED_MODULE_4__["GameElement"](context, innerWidth / 2 - innerWidth / 6, innerHeight / 2, _resources_congratulations_png__WEBPACK_IMPORTED_MODULE_10__["default"]));
+        console.log('Fim do jogo');
+        return;
+      }
+
+      console.log('finish');
+
+      if (player.coins > 9) {
+        player.specialPower = true;
+      }
+
+      loadingElements.push(new _entities_gameElement_js__WEBPACK_IMPORTED_MODULE_4__["GameElement"](context, innerWidth / 4, innerHeight / 4, _resources_loading_png__WEBPACK_IMPORTED_MODULE_13__["default"]));
+      currentLevel++;
+      return;
+    }
+
+    if (COIN_REF === collisionElem.ref && checkCollision) {
+      player.coins++;
+
+      if (player.coins === 10) {
+        player.specialPower = true;
+      }
+
+      collisionElements.splice(i, 1);
+    }
+  }
+
+  return hasCollided;
 }
 
 function buildLevel(levelMap) {
@@ -2425,15 +2512,19 @@ function buildLevel(levelMap) {
 
       switch (line[j]) {
         case PLAT_REF:
-          platforms.push(new _entities_platform_js__WEBPACK_IMPORTED_MODULE_3__["Platform"](context, x, y, elemXSize, elemYSize, tile, PLAT_REF));
+          platforms.push(new _entities_platform_js__WEBPACK_IMPORTED_MODULE_3__["Platform"](context, x, y, elemXSize, elemYSize, Object(_utils_js__WEBPACK_IMPORTED_MODULE_5__["createImage"])(_resources_platform_png__WEBPACK_IMPORTED_MODULE_14__["default"]), PLAT_REF));
           break;
 
         case SPIKE_REF:
-          platforms.push(new _entities_platform_js__WEBPACK_IMPORTED_MODULE_3__["Platform"](context, x, y, elemXSize, elemYSize, Object(_utils_js__WEBPACK_IMPORTED_MODULE_5__["createImage"])(_resources_spike_png__WEBPACK_IMPORTED_MODULE_8__["default"]), SPIKE_REF));
+          platforms.push(new _entities_platform_js__WEBPACK_IMPORTED_MODULE_3__["Platform"](context, x, y, elemXSize, elemYSize, Object(_utils_js__WEBPACK_IMPORTED_MODULE_5__["createImage"])(_resources_spike_png__WEBPACK_IMPORTED_MODULE_16__["default"]), SPIKE_REF));
+          break;
+
+        case FINISH_REF:
+          platforms.push(new _entities_platform_js__WEBPACK_IMPORTED_MODULE_3__["Platform"](context, x, y, elemXSize, elemYSize, Object(_utils_js__WEBPACK_IMPORTED_MODULE_5__["createImage"])(_resources_tile5_png__WEBPACK_IMPORTED_MODULE_15__["default"]), FINISH_REF));
           break;
 
         case COIN_REF:
-          //platforms.push(new Platform(context, x, y, elemXSize, elemYSize, tile, COIN_REF));
+          platforms.push(new _entities_platform_js__WEBPACK_IMPORTED_MODULE_3__["Platform"](context, x, y, elemXSize, elemYSize, Object(_utils_js__WEBPACK_IMPORTED_MODULE_5__["createImage"])(_resources_coin_png__WEBPACK_IMPORTED_MODULE_17__["default"]), COIN_REF));
           break;
       }
 
@@ -2452,21 +2543,37 @@ addEventListener('keydown', function (_ref) {
   console.log(keyCode);
   var JUMP = 87,
       LEFT = 65,
-      RIGHT = 68;
+      RIGHT = 68,
+      SPACE = 32;
+
+  if (freezeMovement) {
+    return;
+  }
 
   switch (keyCode) {
     case JUMP:
-      player.velocity.y -= 20;
+      keys.jump.pressed = true;
       break;
 
     case LEFT:
-      key.left.pressed = true;
+      keys.left.pressed = true;
       console.log('Left down');
       break;
 
     case RIGHT:
-      key.right.pressed = true;
+      keys.right.pressed = true;
       console.log('Right down');
+      break;
+
+    case SPACE:
+      pauseGame = !pauseGame;
+
+      if (pauseGame) {
+        loadingElements = [new _entities_gameElement_js__WEBPACK_IMPORTED_MODULE_4__["GameElement"](context, innerWidth / 3.5, innerHeight / 3, _resources_pause_png__WEBPACK_IMPORTED_MODULE_11__["default"])];
+      } else {
+        loadingElements = [];
+      }
+
       break;
   }
 });
@@ -2477,21 +2584,75 @@ addEventListener('keyup', function (_ref2) {
       LEFT = 65,
       RIGHT = 68;
 
+  if (freezeMovement) {
+    return;
+  }
+
   switch (keyCode) {
     case JUMP:
-      player.velocity.y -= 20;
+      keys.jump.pressed = false;
       break;
 
     case LEFT:
-      key.left.pressed = false;
+      keys.left.pressed = false;
       break;
 
     case RIGHT:
-      key.right.pressed = false;
+      keys.right.pressed = false;
       break;
   }
 });
 init();
+
+/***/ }),
+
+/***/ "./src/js/entities/coinCounter.js":
+/*!****************************************!*\
+  !*** ./src/js/entities/coinCounter.js ***!
+  \****************************************/
+/*! exports provided: CoinCounter */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "CoinCounter", function() { return CoinCounter; });
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
+/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
+/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _resources_coin_png__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../resources/coin.png */ "./src/resources/coin.png");
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../utils */ "./src/js/utils.js");
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_utils__WEBPACK_IMPORTED_MODULE_3__);
+
+
+
+
+var CoinCounter = /*#__PURE__*/function () {
+  function CoinCounter(context) {
+    _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, CoinCounter);
+
+    this.context = context;
+    this.image = Object(_utils__WEBPACK_IMPORTED_MODULE_3__["createImage"])(_resources_coin_png__WEBPACK_IMPORTED_MODULE_2__["default"]);
+    this.position = {
+      x: innerWidth - innerWidth / 12,
+      y: 0
+    };
+  }
+
+  _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(CoinCounter, [{
+    key: "update",
+    value: function update(coins) {
+      //this.context.fillRect(60, 60, innerWidth-60, innerHeight-60);
+      this.context.font = "bold 24px Arial";
+      this.context.fillStyle = "#d8c800";
+      this.context.drawImage(this.image, this.position.x, 0, this.image.width, this.image.height);
+      this.context.fillText(coins, this.position.x + this.image.width, this.image.width / 1.65);
+    }
+  }]);
+
+  return CoinCounter;
+}();
+;
 
 /***/ }),
 
@@ -2509,20 +2670,23 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
 /* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils */ "./src/js/utils.js");
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_utils__WEBPACK_IMPORTED_MODULE_2__);
+
 
 
 var GameElement = /*#__PURE__*/function () {
-  function GameElement(context, x, y, image) {
+  function GameElement(context, x, y, imageName) {
     _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, GameElement);
 
     this.context = context;
-    this.image = image;
+    this.image = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["createImage"])(imageName);
     this.position = {
       x: x,
       y: y
     };
-    this.width = image.width;
-    this.height = image.height;
+    this.width = innerWidth;
+    this.height = innerHeight;
   }
 
   _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(GameElement, [{
@@ -2600,8 +2764,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
 /* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _resources_BeachBall_png__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../resources/BeachBall.png */ "./src/resources/BeachBall.png");
-/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../utils */ "./src/js/utils.js");
-/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_utils__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _resources_WreckedBall_png__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../resources/WreckedBall.png */ "./src/resources/WreckedBall.png");
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../utils */ "./src/js/utils.js");
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_utils__WEBPACK_IMPORTED_MODULE_4__);
+
 
 
 
@@ -2610,10 +2776,13 @@ var Player = /*#__PURE__*/function () {
   function Player(canvas) {
     _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, Player);
 
-    this.gravity = 1.5;
+    this.gravity = 1.50;
     this.canvas = canvas;
     this.context = canvas.getContext('2d');
-    this.image = Object(_utils__WEBPACK_IMPORTED_MODULE_3__["createImage"])(_resources_BeachBall_png__WEBPACK_IMPORTED_MODULE_2__["default"]);
+    this.image = Object(_utils__WEBPACK_IMPORTED_MODULE_4__["createImage"])(_resources_BeachBall_png__WEBPACK_IMPORTED_MODULE_2__["default"]);
+    this.coins = 0;
+    this.isWrecked = false;
+    this.specialPower = false;
     this.position = {
       x: 100,
       y: 100
@@ -2624,22 +2793,64 @@ var Player = /*#__PURE__*/function () {
     };
     this.width = 50;
     this.height = 50;
+    this.rotateVal = 0.01;
   }
 
   _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(Player, [{
+    key: "reset",
+    value: function reset() {
+      this.image = Object(_utils__WEBPACK_IMPORTED_MODULE_4__["createImage"])(_resources_BeachBall_png__WEBPACK_IMPORTED_MODULE_2__["default"]);
+      this.coins = 0;
+      this.isWrecked = false;
+      this.position = {
+        x: 100,
+        y: 100
+      };
+      this.velocity = {
+        x: 0,
+        y: 2
+      };
+    }
+  }, {
     key: "draw",
     value: function draw() {
+      /*this.context.drawImage(this.image, 
+          this.position.x, 
+          this.position.y,
+          this.width,
+          this.height)*/
+      this.context.save(); //this.context.translate(this.position.x, this.position.y);
+
+      this.rotateVal += 0.01; //this.context.translate( this.position.x + this.width/2, this.position.y + this.width/2);
+      //this.context.rotate(this.rotateVal)    
+
       this.context.drawImage(this.image, this.position.x, this.position.y, this.width, this.height);
+      this.context.restore(); //this.context.rotate((this.rotateVal++) * Math.PI / 180);
+
+      if (this.specialPower) {
+        this.context.strokeStyle = "#d8c800";
+        this.context.lineWidth = 5;
+        this.context.beginPath();
+        this.context.arc(this.position.x + this.width / 2, this.position.y + this.height / 2, this.width - this.width / 3, 0, 2 * Math.PI);
+        this.context.stroke();
+      }
       /*
       this.context.fillStyle = 'red'
       this.context.fillRect(this.position.x,
       this.position.y,
       this.width,
       this.height)*/
+
+    }
+  }, {
+    key: "clearDraw",
+    value: function clearDraw() {
+      this.context.clearRect(this.position.x, this.position.y, this.width, this.height);
     }
   }, {
     key: "update",
     value: function update() {
+      //this.move(keys)
       this.draw();
       this.position.x += this.velocity.x;
       this.position.y += this.velocity.y;
@@ -2647,7 +2858,6 @@ var Player = /*#__PURE__*/function () {
 
       if (bottonScreen) {
         this.velocity.y += this.gravity;
-      } else {//this.velocity.y = 0
       }
     }
   }]);
@@ -2661,76 +2871,10 @@ var Player = /*#__PURE__*/function () {
 /*!*******************************!*\
   !*** ./src/js/particles.json ***!
   \*******************************/
-/*! exports provided: particles, interactivity, retina_detect, config_demo, default */
+/*! exports provided: particles, interactivity, default */
 /***/ (function(module) {
 
-module.exports = JSON.parse("{\"particles\":{\"number\":{\"value\":80,\"density\":{\"enable\":true,\"value_area\":800}},\"color\":{\"value\":\"#ffffff\"},\"shape\":{\"type\":\"circle\",\"stroke\":{\"width\":0,\"color\":\"#000000\"},\"polygon\":{\"nb_sides\":5},\"image\":{\"src\":\"img/github.svg\",\"width\":100,\"height\":100}},\"opacity\":{\"value\":0.5,\"random\":false,\"anim\":{\"enable\":false,\"speed\":1,\"opacity_min\":0.1,\"sync\":false}},\"size\":{\"value\":5,\"random\":true,\"anim\":{\"enable\":false,\"speed\":40,\"size_min\":0.1,\"sync\":false}},\"line_linked\":{\"enable\":true,\"distance\":150,\"color\":\"#ffffff\",\"opacity\":0.4,\"width\":1},\"move\":{\"enable\":true,\"speed\":6,\"direction\":\"none\",\"random\":false,\"straight\":false,\"out_mode\":\"out\",\"attract\":{\"enable\":false,\"rotateX\":600,\"rotateY\":1200}}},\"interactivity\":{\"detect_on\":\"canvas\",\"events\":{\"onhover\":{\"enable\":true,\"mode\":\"repulse\"},\"onclick\":{\"enable\":true,\"mode\":\"push\"},\"resize\":true},\"modes\":{\"grab\":{\"distance\":400,\"line_linked\":{\"opacity\":1}},\"bubble\":{\"distance\":400,\"size\":40,\"duration\":2,\"opacity\":8,\"speed\":3},\"repulse\":{\"distance\":200},\"push\":{\"particles_nb\":4},\"remove\":{\"particles_nb\":2}}},\"retina_detect\":true,\"config_demo\":{\"hide_card\":false,\"background_color\":\"#b61924\",\"background_image\":\"\",\"background_position\":\"50% 50%\",\"background_repeat\":\"no-repeat\",\"background_size\":\"cover\"}}");
-
-/***/ }),
-
-/***/ "./src/js/timer.js":
-/*!*************************!*\
-  !*** ./src/js/timer.js ***!
-  \*************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Timer; });
-/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ "./node_modules/@babel/runtime/helpers/classCallCheck.js");
-/* harmony import */ var _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/createClass */ "./node_modules/@babel/runtime/helpers/createClass.js");
-/* harmony import */ var _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1__);
-
-
-
-var Timer = /*#__PURE__*/function () {
-  function Timer() {
-    var _this = this;
-
-    var deltaTime = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1 / 60;
-
-    _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_0___default()(this, Timer);
-
-    var accumulatedTime = 0;
-    var lastTime = 0;
-
-    this.updateProxy = function (time) {
-      accumulatedTime += (time - lastTime) / 1000;
-
-      if (accumulatedTime > 1) {
-        accumulatedTime = 1;
-      }
-
-      while (accumulatedTime > deltaTime) {
-        _this.update(deltaTime);
-
-        accumulatedTime -= deltaTime;
-      }
-
-      lastTime = time;
-
-      _this.enqueue();
-    };
-  }
-
-  _babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_1___default()(Timer, [{
-    key: "enqueue",
-    value: function enqueue() {
-      requestAnimationFrame(this.updateProxy);
-    }
-  }, {
-    key: "start",
-    value: function start() {
-      this.enqueue();
-    }
-  }]);
-
-  return Timer;
-}();
-
-
+module.exports = JSON.parse("{\"particles\":{\"number\":{\"value\":50,\"density\":{\"enable\":true,\"value_area\":500}},\"shape\":{\"type\":\"circle\"},\"size\":{\"value\":10,\"random\":true},\"line_linked\":{\"enable\":false},\"move\":{\"enable\":true,\"speed\":2,\"direction\":\"bottom\",\"straight\":false},\"color\":{\"value\":\"random\"},\"opacity\":{\"value\":1,\"random\":true,\"anim\":{\"enable\":true,\"speed\":8,\"opacity_min\":0.4,\"sync\":false}}},\"interactivity\":{\"detect_on\":\"canvas\",\"events\":{\"onhover\":{\"enable\":false}},\"modes\":{\"push\":{\"particles_nb\":12}}}}");
 
 /***/ }),
 
@@ -2739,68 +2883,12 @@ var Timer = /*#__PURE__*/function () {
   !*** ./src/js/utils.js ***!
   \*************************/
 /*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-var _require = __webpack_require__(/*! ./entities/platform */ "./src/js/entities/platform.js"),
-    Platform = _require.Platform;
-
-var _require2 = __webpack_require__(/*! ../resources/tile1.png */ "./src/resources/tile1.png"),
-    tile1 = _require2.tile1;
+/***/ (function(module, exports) {
 
 function createImage(src) {
   var image = new Image();
   image.src = src;
   return image;
-}
-/*function buildLevel(context) {
-  const platforms = [];
-  const elemXSize = 60;
-  const elemYSize = 60;
-
-  const a = ['------------------------------',
-             '------------------------------',
-             '----------------p-------------',
-             '------------------------------',
-             '---------ss-------------------',
-             'ppppppppppppp-p-pppppppppppppp']
-
-  let revertedY = a.length,
-    xAxis = 0;
-
-  for (let i = 0; i <a.length; i++) {
-    
-    var line = a[i];
-
-    for(let j = 0; j < line.length; j++) {
-      
-      switch(line[j]) {
-      
-        case 'p':
-          let tile = createImage(tile1),
-            x = xAxis,
-            y = innerHeight - elemYSize * revertedY;
-
-          platforms.push(new Platform(context, x, y, elemXSize, elemYSize, tile));
-          break;
-
-        case 's':
-          break;  
-      }
-
-      xAxis+=elemXSize;
-      
-    }
-
-    revertedY--;
-    xAxis = 0;
-  }
-
-  return platforms;
-}*/
-
-
-function createDiv(src) {
-  var newDiv = document.createElement("div");
 }
 
 module.exports = {
@@ -2822,16 +2910,133 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
-/***/ "./src/resources/background.png":
-/*!**************************************!*\
-  !*** ./src/resources/background.png ***!
-  \**************************************/
+/***/ "./src/resources/WreckedBall.png":
+/*!***************************************!*\
+  !*** ./src/resources/WreckedBall.png ***!
+  \***************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "faac47cb7e298b6dafee4b83c0ef9ba5.png");
+
+/***/ }),
+
+/***/ "./src/resources/backgroundLvl1.png":
+/*!******************************************!*\
+  !*** ./src/resources/backgroundLvl1.png ***!
+  \******************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "f6d6a575a87c129ce19dc5587a9f0bd6.png");
+
+/***/ }),
+
+/***/ "./src/resources/backgroundLvl2.png":
+/*!******************************************!*\
+  !*** ./src/resources/backgroundLvl2.png ***!
+  \******************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "a5bd4e0ae13bc2edca22d79535b9af8b.png");
+
+/***/ }),
+
+/***/ "./src/resources/backgroundLvl3.png":
+/*!******************************************!*\
+  !*** ./src/resources/backgroundLvl3.png ***!
+  \******************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "411426af017a39ea7a2b38a0fac9a8b9.png");
+
+/***/ }),
+
+/***/ "./src/resources/backgroundLvl4.png":
+/*!******************************************!*\
+  !*** ./src/resources/backgroundLvl4.png ***!
+  \******************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "275a184f08abfe07180a3a43b781c06e.png");
+
+/***/ }),
+
+/***/ "./src/resources/coin.png":
+/*!********************************!*\
+  !*** ./src/resources/coin.png ***!
+  \********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "dfc0740e60320c1057b717b66bc2d981.png");
+
+/***/ }),
+
+/***/ "./src/resources/congratulations.png":
+/*!*******************************************!*\
+  !*** ./src/resources/congratulations.png ***!
+  \*******************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "ab55eaa24193fdc8ab182975e3f64f97.png");
+
+/***/ }),
+
+/***/ "./src/resources/loading.png":
+/*!***********************************!*\
+  !*** ./src/resources/loading.png ***!
+  \***********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "d670310a12fb7d89473868f47822133f.png");
+
+/***/ }),
+
+/***/ "./src/resources/pause.png":
+/*!*********************************!*\
+  !*** ./src/resources/pause.png ***!
+  \*********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "93861ecbf68b4c65db22677e5404128e.png");
+
+/***/ }),
+
+/***/ "./src/resources/platform.png":
+/*!************************************!*\
+  !*** ./src/resources/platform.png ***!
+  \************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "ca85b1815eacb73be83415cdd47670f2.png");
 
 /***/ }),
 
@@ -2848,16 +3053,29 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
-/***/ "./src/resources/tile1.png":
+/***/ "./src/resources/tile5.png":
 /*!*********************************!*\
-  !*** ./src/resources/tile1.png ***!
+  !*** ./src/resources/tile5.png ***!
   \*********************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "ca85b1815eacb73be83415cdd47670f2.png");
+/* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "502be2c043b7a79ec407bea49d19bdff.png");
+
+/***/ }),
+
+/***/ "./src/resources/youDied.png":
+/*!***********************************!*\
+  !*** ./src/resources/youDied.png ***!
+  \***********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = (__webpack_require__.p + "94571139553a99a9cda085ac79af16a9.png");
 
 /***/ })
 
